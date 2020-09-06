@@ -1,11 +1,6 @@
 var Product = require('../models/product');
 
-exports.test = function (req, res) {
-    res.send('Greetings from the Test controller!');
-};
-
 exports.createAll = async (data, res) => {
-    
     if( data ){
         await Product.deleteMany( {}, (err)=>{
             if( err ) console.log(err);
@@ -17,19 +12,21 @@ exports.createAll = async (data, res) => {
     }
 };
 
-exports.getAll = async (req, res) => {
-    Product.find({}, function (err, product) {
-        if (err) res.status(500).send({message: "Error occured while getting products"});
-        res.status(200).send(product);
+exports.getAll = async ( {} , res ) => {
+    const products = await Product.find( {}, function (err, product) {
+        if (err) res.status( 500 ).send( { message: "Error occured while getting products" } );
     })
+    return { status: 200, payload: products}
 };
 
-exports.getSingle = function (req, res) {
-    Product.find({ productId: req.params.id } , function (err, product) {
-        if (err) res.status(500).send({message: "Error occured while getting product"});
-        const status = product ? 200 : 404;
-        res.status(status).send(product);
+exports.getSingle = async ( { id }, res ) => {
+    const product = await Product.findOne({ productId: id } , function (err, product) {
+        if (err) res.status( 500 ).send( { message: "Error occured while getting product" } );
     })
+    if( product ) 
+        return { status: 200, payload: product }
+    else 
+        return { status: 404, payload: product }
 };
 
 // exports.update = function (req, res) {
