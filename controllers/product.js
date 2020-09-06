@@ -1,43 +1,40 @@
 var Product = require('../models/product');
 
-//Simple version, without validation or sanitation
 exports.test = function (req, res) {
     res.send('Greetings from the Test controller!');
 };
 
-exports.product_create = function (req, res) {
-    var product = new Product(
-        {
-            name: req.body.name,
-            price: req.body.price
-        }
-    );
+exports.createAll = async (data, res) => {
+    
+    if( data ){
+        await Product.deleteMany( {}, (err)=>{
+            if( err ) console.log(err);
+        })
+        await Product.create( data, (err) => {
+            if( err ) return false;
+        })
+        return true
+    }
+};
 
-    product.save(function (err) {
-        if (err) {
-            return next(err);
-        }
-        res.send('Product Created successfully')
+exports.getAll = async (req, res) => {
+    Product.find({}, function (err, product) {
+        if (err) res.status(500).send({message: "Error occured while getting products"});
+        res.status(200).send(product);
     })
 };
 
-exports.product_details = function (req, res) {
-    Product.findById(req.params.id, function (err, product) {
-        if (err) return next(err);
-        res.send(product);
+exports.getSingle = function (req, res) {
+    Product.find({ productId: req.params.id } , function (err, product) {
+        if (err) res.status(500).send({message: "Error occured while getting product"});
+        const status = product ? 200 : 404;
+        res.status(status).send(product);
     })
 };
 
-exports.product_update = function (req, res) {
-    Product.findByIdAndUpdate(req.params.id, {$set: req.body}, function (err, product) {
-        if (err) return next(err);
-        res.send('Product udpated.');
-    });
-};
-
-exports.product_delete = function (req, res) {
-    Product.findByIdAndRemove(req.params.id, function (err) {
-        if (err) return next(err);
-        res.send('Deleted successfully!');
-    })
-};
+// exports.update = function (req, res) {
+//     Product.findByIdAndUpdate(req.params.id, {$set: req.body}, function (err, product) {
+//         if (err) return next(err);
+//         res.send('Product udpated.');
+//     });
+// };
