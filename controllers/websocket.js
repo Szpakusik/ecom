@@ -1,19 +1,18 @@
 const WebSocket = require('ws');
+const socket = require('socket.io')
 const orderController = require("./order")
 const productController = require("./product")
+// const server = require("../app")
 let wsc;
 let wss;
 
-exports.wsServerInit = async () => {
-    // console.log(vasiable);
-    vasiable = "pizda"
-    wss = new WebSocket.Server({ port: 3002 });
-    // console.log(wss);
-    console.log("WS Server initialized!");
-
-    let productId, quantity;    // tobedeleted
-    wss.on('connect', () => {console.log("Somebody connected!")} )
+exports.wsServerInit = async (server) => {
     
+    wss = socket(server)
+    wss.on('connection', (socket) => {
+        console.log("made socket connection");
+    })
+
 }
 
 exports.wsClientConnect = async () => {
@@ -36,14 +35,14 @@ exports.wsClientConnect = async () => {
         // Product decreased
         if(json.operation === "product.stock.decreased"){
             const result = await orderController.updateQuantity(json);
-            wss.emit('product.decrease', { })
+            result && wss.sockets.emit('product.decrease', json)
         }
 
     });
     wsc.on('close', function close() {
         console.log('disconnected');
         isWebSocketConnected = false
-        setTimeout( wsClientConnect, 100000 );
+        setTimeout( this.wsClientConnect, 100000 );
     });
 
 }
