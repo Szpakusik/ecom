@@ -1,6 +1,7 @@
-const Order = require('../models/product');
+const Order = require('../models/order');
 const productController = require('./product')
 const wsController = require('./websocket')
+
 
 exports.toAccept = {};
 
@@ -14,6 +15,9 @@ exports.prepare = async ( { productId, quantity }, res) => {
 
     //SEND RESPONSE!
     const product = await productController.getSingle( { id: productId } )
+
+    console.log(product);
+    console.log("1");
 
     if( !product ) return { status: 404, payload: { message: "Product not found" } };
 
@@ -39,15 +43,23 @@ exports.prepare = async ( { productId, quantity }, res) => {
 
 exports.send = async ( {productId, quantity}, res ) => {
 
+    // Promise fix?
     const order = await Order.create({
         productId: productId,
         quantity: quantity
-    }, (err) => { 
-        if( err ) res.status( 500 ).send( { message: "Error occured while sending order" } );
+    }, (err, data) => { 
+        if( err ){
+            res.status( 500 ).send( { message: "Error occured while sending order" } );  
+            console.log(err);
+        } 
+        if( data ){
+            if( order ) return { status: 200, payload: data }
+        }
     })
-
+    console.log(2);
     console.log(order);
-    if( order ) return { status: 200, payload: order }    
+        
+    // return { status: 404, payload: order }    
 
 }
 
@@ -57,6 +69,8 @@ exports.updateQuantity = async ( {payload} ) => {
     };
     let order = await Order.findOneAndUpdate( {productId: payload.productId}, update )
     // console.log(order);
+
+    // wsController.getWSS().sockets.emit('updateQuantity', payload)
     
     // For those that come before product initialization
     if( !order ) {

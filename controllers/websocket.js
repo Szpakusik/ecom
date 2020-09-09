@@ -8,11 +8,11 @@ let wss;
 
 exports.wsServerInit = async (server) => {
     
-    var io = socket(server)
-    io.on('connection', (socket) => {
+    wss = socket(server)
+    wss.on('connection', (socket) => {
         console.log("made socket connection");
     })
-    
+
 }
 
 exports.wsClientConnect = async () => {
@@ -35,7 +35,7 @@ exports.wsClientConnect = async () => {
         // Product decreased
         if(json.operation === "product.stock.decreased"){
             const result = await orderController.updateQuantity(json);
-            // wss.emit('product.decrease', { })
+            result && wss.sockets.emit('product.decrease', json)
         }
 
     });

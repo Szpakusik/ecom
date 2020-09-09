@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const productRouter = require('./routes/product');
+const orderRouter = require('./routes/order');
 const websocketContorler = require('./controllers/websocket');
 const process = require('process');
 
@@ -16,6 +17,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 
 app.use('/', productRouter);
+app.use('/', orderRouter);
 
 app.use(function (req, res, next) {
     res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
