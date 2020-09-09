@@ -27,11 +27,11 @@ exports.prepare = async ( { productId, quantity }, res) => {
     this.orderResponseHandler = (data) => {
         if( toAccept[data.correlationId] ) {
             send( toAccept[data.correlationId] )
-            wsController.getWSS().removeListener('message', this.orderResponseHandler);
+            // wsController.getWSS().removeListener('message', this.orderResponseHandler);
         }
     }
 
-    wsController.getWSS().on('message', this.orderResponseHandler)
+    // wsController.getWSS().on('message', this.orderResponseHandler)
 
 
     return true;

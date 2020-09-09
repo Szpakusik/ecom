@@ -7,12 +7,23 @@ const process = require('process');
 
 const app = express();
 const port = 3001;
-const ioc = require('socket.io-client')
+var cors = require('cors');
+
+app.use(cors());
+app.options('*', cors());
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 
 app.use('/', productRouter);
+
+app.use(function (req, res, next) {
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+    res.setHeader('Access-Control-Allow-Methods', 'POST');
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    next();
+});
 
 let isWebSocketConnected;
 
@@ -29,7 +40,7 @@ const server = app.listen(port, () => {
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 db.once('open', async () => {
     console.log('Connected to MongoDB!');
-    await websocketContorler.wsServerInit()
+    await websocketContorler.wsServerInit(server)
     websocketContorler.wsClientConnect()
 });
 
