@@ -20,8 +20,6 @@ exports.prepare = async ( { productId, quantity }, res) => {
     //SEND RESPONSE!
     return new Promise( async (resolve, reject) => {
 
-
-
         const correlationId = wsController.wsQuantityAsk({productId, quantity})
 
         this.toAccept[correlationId] = { 
@@ -52,11 +50,16 @@ this.orderResponseHandler = (data) => {
     // jesli nie ma w tym to znaczy serwer restarted
     if( this.toAccept[json.correlationId] ) {
 
-        console.log("happen2");
 
-        send( this.toAccept[json.correlationId] );
+        if(json.payload.error){
+            console.log("error400sennd");
+            this.toAccept[json.correlationId].res.status(400).send({ message:"Amount not available"})
+        }
+        else{
+            send( this.toAccept[json.correlationId] );
+            this.toAccept[json.correlationId].res.status(200).send(json)
+        }
 
-        this.toAccept[json.correlationId].res.status(200).send(json)
         this.listenerCount -= 1;
 
         if( this.listenerCount === 0 )

@@ -24,7 +24,6 @@ exports.wsClientConnect = async () => {
     });
     wsc.on('message', async (data) => {
         //Add error handling
-        // console.log(data);
         const json = JSON.parse(data)
         let result;
         if( Array.isArray( json ) ){
@@ -38,12 +37,6 @@ exports.wsClientConnect = async () => {
             // console.log(json);
             const result = await orderController.updateQuantity(json);
             wss.sockets.emit('product.decrease', json)
-        }
-        if(json.operation === "product.stock.decrease.failed"){
-            // const result = await orderController.updateQuantity(json);
-            orderController.removeToAccept(json.correlationId)
-            console.log("WANT IT TO HAPPEN");
-            result && wss.sockets.emit('product.decrease', json)
         }
 
     });
