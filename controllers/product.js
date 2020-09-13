@@ -19,9 +19,13 @@ exports.getAll = async ( {} , res ) => {
     return { status: 200, payload: products}
 };
 
-exports.getSingle = async ( { id }, res ) => {
-    const product = await Product.findOne({ productId: id } , function (err, product) {
-        if (err) res.status( 500 ).send( { message: "Error occured while getting product" } );
+exports.getSingle = async ( { id, productId } ) => {
+    let givenId = id;
+    if( !givenId ) givenId = productId;
+    const product = await Product.findOne({ productId: givenId } , function (err, product) {
+        if (err) {
+            return { status: 500, payload: { message: "Error occured while getting product" } }
+        }
     })
     if( product ) 
         return { status: 200, payload: product }
