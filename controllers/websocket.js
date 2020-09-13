@@ -1,19 +1,19 @@
 const WebSocket = require('ws');
+const socket = require('socket.io')
 const orderController = require("./order")
-const productController = require("./product")
+const productController = require("./product");
+const { json } = require('body-parser');
+// const server = require("../app")
 let wsc;
 let wss;
 
-exports.wsServerInit = async () => {
-    // console.log(vasiable);
-    vasiable = "pizda"
-    wss = new WebSocket.Server({ port: 3002 });
-    // console.log(wss);
-    console.log("WS Server initialized!");
-
-    let productId, quantity;    // tobedeleted
-    wss.on('connect', () => {console.log("Somebody connected!")} )
+exports.wsServerInit = async (server) => {
     
+    wss = socket(server)
+    wss.on('connection', (socket) => {
+        console.log("made socket connection");
+    })
+
 }
 
 exports.wsClientConnect = async () => {
@@ -24,7 +24,6 @@ exports.wsClientConnect = async () => {
     });
     wsc.on('message', async (data) => {
         //Add error handling
-
         const json = JSON.parse(data)
         let result;
         if( Array.isArray( json ) ){
@@ -34,9 +33,10 @@ exports.wsClientConnect = async () => {
         // else console.log(data);
 
         // Product decreased
-        if(json.operation === "product.stock.decreased"){
+        if(json.operation === "product.stock.decreased" || json.operation === "product.stock.updated"){
+            // console.log(json);
             const result = await orderController.updateQuantity(json);
-            wss.emit('product.decrease', { })
+            wss.sockets.emit('product.decrease', json)
         }
 
     });
@@ -48,30 +48,34 @@ exports.wsClientConnect = async () => {
 
 }
 
-exports.wsQuantityAsk = ( {} ) => {
+exports.wsQuantityAsk = ( {productId, quantity} ) => {
     const correlationId = this._createCorrelationId();
-    wsc.emit('message', {
+    const json =  JSON.stringify({
         "operation": "product.stock.decrease",
-        "correlationId": correlationId, // tutaj powinno znaleźć się wygenerowane przez Ciebie unikalne id
         "payload": {
-            "productId": 123, // id produktu
-            "stock": 100 // ile sztuk zostało zamówionych
-        }
+            "productId": productId, 
+            "stock": quantity
+        },
+        "correlationId": correlationId 
     })
+    wsc.send(json)
     return correlationId;
 }
 
 exports.getWSS = () => {
     return wss;
 }
+exports.getWSC = () => {
+    return wsc;
+}
 
 this._createCorrelationId = () => {
-    return this.createString(8) + "-" + this.createString(4) + "-" + this.createString(4) + "-" + this.createString(4) + "-" + this.createString(12);
+    return this._createString(8) + "-" + this._createString(4) + "-" + this._createString(4) + "-" + this._createString(4) + "-" + this._createString(12);
 }
 
 this._createString = ( length ) => {
-    const result = '';
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
     const charactersLength = characters.length;
     for ( var i = 0; i < length; i++ ) {
        result += characters.charAt(Math.floor(Math.random() * charactersLength));

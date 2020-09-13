@@ -1,62 +1,104 @@
-const Order = require('../models/product');
+const Order = require('../models/order');
 const productController = require('./product')
-const wsController = require('./websocket')
+const wsController = require('./websocket');
 
-exports.toAccept = {};
+this.toAccept = {};
+this.listenerCount = 0;
 
 exports.getSingle = async( { id }, res) => {
-    return await Order.find( { productId: id } , function (err, product) {
-        if (err) res.status( 500 ).send({message: "Error occured while getting order"});
+    const order = await Order.find( { _id: id } , function (err, product) {
+        if (err){
+            console.log(err);
+            res.status( 404 ).send({message: "Order not found!"});
+        }
     })
+    return { status: 200, payload: order}
 };
 
 exports.prepare = async ( { productId, quantity }, res) => {
 
     //SEND RESPONSE!
-    const product = await productController.getSingle( { id: productId } )
+    return new Promise( async (resolve, reject) => {
 
-    if( !product ) return { status: 404, payload: { message: "Product not found" } };
+        const correlationId = wsController.wsQuantityAsk({productId, quantity})
 
-    const correlationId = wsController.wsQuantityAsk()
+        this.toAccept[correlationId] = { 
+            productId, 
+            quantity,
+            res
+        };
+        if( !this.listenerCount )
+            wsController.getWSC().on('message', this.orderResponseHandler)
+        this.listenerCount +=1;
 
-    this.toAccept[correlationId] = { 
-        productId, 
-        quantity,
-    };
+        return true;
 
-    this.orderResponseHandler = (data) => {
-        if( toAccept[data.correlationId] ) {
-            send( toAccept[data.correlationId] )
-            wsController.getWSS().removeListener('message', this.orderResponseHandler);
-        }
-    }
-
-    wsController.getWSS().on('message', this.orderResponseHandler)
-
-
-    return true;
+    })
 };
 
-exports.send = async ( {productId, quantity}, res ) => {
+exports.removeToAccept  = (correlationId) => {
+    this.listenerCount -= 1;
+    if( this.listenerCount === 0 )
+            wsController.getWSC().off('message', this.orderResponseHandler);
+    delete this.toAccept[correlationId];
+}
 
-    const order = await Order.create({
-        productId: productId,
-        quantity: quantity
-    }, (err) => { 
-        if( err ) res.status( 500 ).send( { message: "Error occured while sending order" } );
-    })
+this.orderResponseHandler = (data) => {
+    const json = JSON.parse(data)
+    console.log("happen1");
+    
+    // jesli nie ma w tym to znaczy serwer restarted
+    if( this.toAccept[json.correlationId] ) {
 
-    console.log(order);
-    if( order ) return { status: 200, payload: order }    
+
+        if(json.payload.error){
+            console.log("error400sennd");
+            this.toAccept[json.correlationId].res.status(400).send({ message:"Amount not available"})
+        }
+        else{
+            send( this.toAccept[json.correlationId] );
+            this.toAccept[json.correlationId].res.status(200).send(json)
+        }
+
+        this.listenerCount -= 1;
+
+        if( this.listenerCount === 0 )
+            wsController.getWSC().off('message', this.orderResponseHandler);
+
+        delete this.toAccept[json.correlationId];
+
+    } 
 
 }
+const send = ( {productId, quantity} ) => {
+
+    return new Promise( async (resolve, reject) => {
+
+        const order = await Order.create({
+            productId: productId,
+            quantity: quantity
+        }, (err, data) => { 
+            if( err ){
+                console.log(err);
+                reject(err)
+            } 
+            if( data ){
+                resolve( { status: 200, payload: data } )
+            }
+        })
+
+    } )
+    
+
+}
+ 
+exports.send
 
 exports.updateQuantity = async ( {payload} ) => {
     const update = {
         stock: payload.stock
     };
     let order = await Order.findOneAndUpdate( {productId: payload.productId}, update )
-    // console.log(order);
     
     // For those that come before product initialization
     if( !order ) {
