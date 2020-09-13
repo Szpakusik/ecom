@@ -49,7 +49,7 @@ db.once('open', async () => {
 // Handle exceptions 
 process.on('uncaughtException', function(err) {
     console.log('Caught exception: ' + err);
-    if(err && !err.message.includes("503")) throw err
+    // if(err && !err.message.includes("503")) throw err
 });
 
 module.exports = server
